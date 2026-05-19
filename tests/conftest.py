@@ -1,5 +1,13 @@
-import pytest
+import os
+import sys
 from pathlib import Path
+
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+import pytest
 from PySide6.QtWidgets import QApplication
 from unittest.mock import MagicMock
 
@@ -67,6 +75,10 @@ def mock_view():
     view.delete_button = MagicMock()
     view.refresh_button = MagicMock()
     view.export_button = MagicMock()
+    view.recycle_bin_button = MagicMock()
+    view.restore_button = MagicMock()
+    view.delete_forever_button = MagicMock()
+    view.empty_bin_button = MagicMock()
     view.apply_filter_button = MagicMock()
     view.clear_filter_button = MagicMock()
     view.sort_order_combo = MagicMock()

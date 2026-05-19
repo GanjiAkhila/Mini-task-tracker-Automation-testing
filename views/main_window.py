@@ -59,6 +59,7 @@ class MainWindow(QMainWindow):
         self.resize(1280, 860)
         self.setMinimumSize(960, 720)
         self.setWindowFlag(Qt.WindowMaximizeButtonHint, True)
+        self.is_recycle_bin_mode = False
         self.summary_cards: dict[str, SummaryCard] = {}
         self._build_ui()
 
@@ -220,29 +221,47 @@ class MainWindow(QMainWindow):
 
         action_label = QLabel("Quick Actions")
         action_label.setObjectName("sectionLabel")
-        action_hint = QLabel("Select a row to edit or delete, or refresh the list.")
-        action_hint.setObjectName("cardSubtitle")
+        self.action_hint_label = QLabel(
+            "Select a row to edit or delete, or refresh the list."
+        )
+        self.action_hint_label.setObjectName("cardSubtitle")
 
         action_title_layout = QVBoxLayout()
         action_title_layout.setSpacing(2)
         action_title_layout.addWidget(action_label)
-        action_title_layout.addWidget(action_hint)
+        action_title_layout.addWidget(self.action_hint_label)
 
         self.edit_button = QPushButton("Edit Selected")
         self.edit_button.setObjectName("neutralButton")
         self.delete_button = QPushButton("Delete Selected")
         self.delete_button.setObjectName("dangerButton")
+        self.restore_button = QPushButton("Restore Selected")
+        self.restore_button.setObjectName("neutralButton")
+        self.delete_forever_button = QPushButton("Delete Permanently")
+        self.delete_forever_button.setObjectName("dangerButton")
+        self.empty_bin_button = QPushButton("Empty Recycle Bin")
+        self.empty_bin_button.setObjectName("dangerButton")
         self.export_button = QPushButton("Export CSV")
         self.export_button.setObjectName("neutralButton")
         self.refresh_button = QPushButton("Refresh")
         self.refresh_button.setObjectName("neutralButton")
+        self.recycle_bin_button = QPushButton("Open Recycle Bin")
+        self.recycle_bin_button.setObjectName("neutralButton")
+
+        self.restore_button.hide()
+        self.delete_forever_button.hide()
+        self.empty_bin_button.hide()
 
         action_layout.addLayout(action_title_layout)
         action_layout.addStretch()
         action_layout.addWidget(self.edit_button)
         action_layout.addWidget(self.delete_button)
+        action_layout.addWidget(self.restore_button)
+        action_layout.addWidget(self.delete_forever_button)
+        action_layout.addWidget(self.empty_bin_button)
         action_layout.addWidget(self.export_button)
         action_layout.addWidget(self.refresh_button)
+        action_layout.addWidget(self.recycle_bin_button)
         main_layout.addWidget(action_card)
 
         central_widget.setLayout(main_layout)
@@ -262,7 +281,9 @@ class MainWindow(QMainWindow):
                 QTableWidgetItem(task.title),
                 QTableWidgetItem(task.priority),
                 QTableWidgetItem(task.status),
-                QTableWidgetItem(task.created_at),
+                QTableWidgetItem(
+                    task.deleted_at if self.is_recycle_bin_mode else task.created_at
+                ),
             ]
 
             items[0].setTextAlignment(Qt.AlignCenter)
@@ -302,6 +323,29 @@ class MainWindow(QMainWindow):
         self.priority_filter.setCurrentIndex(0)
         self.search_input.clear()
 
+    def set_recycle_bin_mode(self, is_enabled: bool) -> None:
+        self.is_recycle_bin_mode = is_enabled
+        self.task_form.setEnabled(not is_enabled)
+        self.edit_button.setVisible(not is_enabled)
+        self.delete_button.setVisible(not is_enabled)
+        self.export_button.setVisible(not is_enabled)
+
+        self.restore_button.setVisible(is_enabled)
+        self.delete_forever_button.setVisible(is_enabled)
+        self.empty_bin_button.setVisible(is_enabled)
+
+        self.recycle_bin_button.setText(
+            "Close Recycle Bin" if is_enabled else "Open Recycle Bin"
+        )
+        self.task_table.setHorizontalHeaderItem(
+            4, QTableWidgetItem("Deleted Date" if is_enabled else "Created Date")
+        )
+        self.action_hint_label.setText(
+            "Restore a deleted task or remove it permanently."
+            if is_enabled
+            else "Select a row to edit or delete, or refresh the list."
+        )
+
     def update_summary_cards(self, summary: Mapping[str, int]) -> None:
         for key, card in self.summary_cards.items():
             card.set_value(summary.get(key, 0))
@@ -338,8 +382,34 @@ class MainWindow(QMainWindow):
     def ask_delete_confirmation(self, task_title: str) -> bool:
         answer = QMessageBox.question(
             self,
-            "Confirm Delete",
-            f"Delete the selected task?\n\n{task_title}",
+            "Move To Recycle Bin",
+            f"Move the selected task to recycle bin?\n\n{task_title}",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        return answer == QMessageBox.Yes
+
+    def ask_permanent_delete_confirmation(self, task_title: str) -> bool:
+        answer = QMessageBox.question(
+            self,
+            "Permanent Delete",
+            (
+                "Permanently delete this task?\n\n"
+                f"{task_title}\n\nThis action cannot be undone."
+            ),
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        return answer == QMessageBox.Yes
+
+    def ask_empty_recycle_bin_confirmation(self, deleted_count: int) -> bool:
+        answer = QMessageBox.question(
+            self,
+            "Empty Recycle Bin",
+            (
+                f"Permanently delete {deleted_count} task(s) from recycle bin?\n\n"
+                "This action cannot be undone."
+            ),
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,
         )

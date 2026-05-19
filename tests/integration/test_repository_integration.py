@@ -61,12 +61,48 @@ def test_update_task(repository):
     assert fetched.priority == "High"
     assert fetched.status == "Done"
 
-def test_delete_task(repository):
+def test_delete_task_moves_task_to_recycle_bin(repository):
     task_id = repository.add_task(Task(title="Delete", priority="Low", status="Todo"))
     assert repository.get_task_by_id(task_id) is not None
     
     repository.delete_task(task_id)
     assert repository.get_task_by_id(task_id) is None
+    deleted_task = repository.get_task_by_id(task_id, include_deleted=True)
+    assert deleted_task is not None
+    assert deleted_task.deleted_at is not None
+    assert len(repository.get_deleted_tasks()) == 1
+
+
+def test_restore_task(repository):
+    task_id = repository.add_task(Task(title="Restore", priority="Medium", status="Todo"))
+    repository.delete_task(task_id)
+
+    repository.restore_task(task_id)
+
+    restored_task = repository.get_task_by_id(task_id)
+    assert restored_task is not None
+    assert restored_task.deleted_at is None
+    assert repository.get_deleted_tasks() == []
+
+
+def test_delete_task_permanently(repository):
+    task_id = repository.add_task(Task(title="Delete Forever", priority="Low", status="Todo"))
+    repository.delete_task(task_id)
+
+    repository.delete_task_permanently(task_id)
+
+    assert repository.get_task_by_id(task_id, include_deleted=True) is None
+
+
+def test_empty_recycle_bin(repository):
+    keep_id = repository.add_task(Task(title="Keep", priority="Low", status="Todo"))
+    drop_id = repository.add_task(Task(title="Drop", priority="High", status="Done"))
+    repository.delete_task(drop_id)
+
+    repository.empty_recycle_bin()
+
+    assert repository.get_deleted_tasks() == []
+    assert repository.get_task_by_id(keep_id) is not None
 
 def test_search_tasks_by_title_case_insensitive(repository):
     repository.add_task(Task(title="Python Task", priority="High", status="Todo"))

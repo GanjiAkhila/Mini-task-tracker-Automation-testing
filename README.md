@@ -9,7 +9,9 @@ Mini Task Tracker is a small Linux desktop application for managing software dev
 - Add tasks with title, description, priority, and status
 - View all tasks in a table
 - Edit a selected task
-- Delete a selected task with confirmation
+- Move deleted tasks to a recycle bin with confirmation
+- Restore tasks from recycle bin
+- Permanently delete tasks from recycle bin (single task or empty bin)
 - Search tasks by title
 - Filter tasks by status and priority
 - Persist task data locally with SQLite
