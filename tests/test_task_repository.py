@@ -70,7 +70,7 @@ def test_update_task_works(tmp_path: Path) -> None:
     assert task.status == "Done"
 
 
-def test_delete_task_works(tmp_path: Path) -> None:
+def test_delete_task_moves_task_to_recycle_bin(tmp_path: Path) -> None:
     _database_path, repository = _create_repository(tmp_path)
     task_id = repository.add_task(
         Task(
@@ -84,6 +84,67 @@ def test_delete_task_works(tmp_path: Path) -> None:
     repository.delete_task(task_id)
 
     assert repository.get_task_by_id(task_id) is None
+    deleted_task = repository.get_task_by_id(task_id, include_deleted=True)
+    assert deleted_task is not None
+    assert deleted_task.deleted_at is not None
+    assert len(repository.get_deleted_tasks()) == 1
+
+
+def test_restore_task_works(tmp_path: Path) -> None:
+    _database_path, repository = _create_repository(tmp_path)
+    task_id = repository.add_task(
+        Task(
+            title="Restore me",
+            description="Recycle bin test",
+            priority="Medium",
+            status="In Progress",
+        )
+    )
+
+    repository.delete_task(task_id)
+    repository.restore_task(task_id)
+
+    restored_task = repository.get_task_by_id(task_id)
+    assert restored_task is not None
+    assert restored_task.deleted_at is None
+    assert repository.get_deleted_tasks() == []
+
+
+def test_delete_task_permanently_works(tmp_path: Path) -> None:
+    _database_path, repository = _create_repository(tmp_path)
+    task_id = repository.add_task(
+        Task(
+            title="Delete forever",
+            description="Permanent delete test",
+            priority="High",
+            status="Todo",
+        )
+    )
+
+    repository.delete_task(task_id)
+    repository.delete_task_permanently(task_id)
+
+    assert repository.get_task_by_id(task_id, include_deleted=True) is None
+
+
+def test_empty_recycle_bin_works(tmp_path: Path) -> None:
+    _database_path, repository = _create_repository(tmp_path)
+    active_task_id = repository.add_task(
+        Task(title="Keep me", description="", priority="Low", status="Todo")
+    )
+    deleted_task_one = repository.add_task(
+        Task(title="Delete one", description="", priority="Low", status="Todo")
+    )
+    deleted_task_two = repository.add_task(
+        Task(title="Delete two", description="", priority="Medium", status="Done")
+    )
+
+    repository.delete_task(deleted_task_one)
+    repository.delete_task(deleted_task_two)
+    repository.empty_recycle_bin()
+
+    assert repository.get_deleted_tasks() == []
+    assert repository.get_task_by_id(active_task_id) is not None
 
 
 def test_filter_by_status_works(tmp_path: Path) -> None:

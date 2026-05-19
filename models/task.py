@@ -9,3 +9,4 @@ class Task:
     priority: str = ""
     status: str = ""
     created_at: str = ""
+    deleted_at: str | None = None

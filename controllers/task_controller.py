@@ -18,8 +18,10 @@ class TaskController:
         self.validation_service = validation_service
         self.csv_export_service = csv_export_service or CSVExportService()
         self.editing_task_id: int | None = None
+        self.showing_recycle_bin = False
 
         self._connect_signals()
+        self.view.set_recycle_bin_mode(False)
         self._refresh_task_table("Ready")
 
     def _connect_signals(self) -> None:
@@ -29,12 +31,22 @@ class TaskController:
         self.view.delete_button.clicked.connect(self.delete_selected_task)
         self.view.refresh_button.clicked.connect(self.refresh_tasks)
         self.view.export_button.clicked.connect(self.export_tasks_to_csv)
+        self.view.recycle_bin_button.clicked.connect(self.toggle_recycle_bin_view)
+        self.view.restore_button.clicked.connect(self.restore_selected_task)
+        self.view.delete_forever_button.clicked.connect(
+            self.delete_selected_task_permanently
+        )
+        self.view.empty_bin_button.clicked.connect(self.empty_recycle_bin)
         self.view.apply_filter_button.clicked.connect(self.apply_filters)
         self.view.clear_filter_button.clicked.connect(self.clear_filters)
         self.view.sort_order_combo.currentIndexChanged.connect(self.update_sort_order)
         self.view.search_input.returnPressed.connect(self.apply_filters)
 
     def add_task(self) -> None:
+        if self.showing_recycle_bin:
+            self.view.show_status_message("Close recycle bin to add or edit tasks")
+            return
+
         form_data = self.view.task_form.get_form_data()
         errors = self.validation_service.validate_task(
             title=form_data["title"],
@@ -78,6 +90,10 @@ class TaskController:
         self._refresh_task_table(success_message)
 
     def edit_selected_task(self) -> None:
+        if self.showing_recycle_bin:
+            self.view.show_status_message("Restore a task first, then edit it")
+            return
+
         task_id = self.view.get_selected_task_id()
         if task_id is None:
             self.view.show_status_message("Please select a task first")
@@ -95,6 +111,12 @@ class TaskController:
         self.view.show_status_message("Task loaded for editing")
 
     def delete_selected_task(self) -> None:
+        if self.showing_recycle_bin:
+            self.view.show_status_message(
+                "Use Delete Permanently while recycle bin is open"
+            )
+            return
+
         task_id = self.view.get_selected_task_id()
         if task_id is None:
             self.view.show_status_message("Please select a task first")
@@ -112,15 +134,96 @@ class TaskController:
         self.repository.delete_task(task_id)
         if self.editing_task_id == task_id:
             self.reset_form_state()
-        self._refresh_task_table("Task deleted successfully")
+        self._refresh_task_table("Task moved to recycle bin")
+
+    def restore_selected_task(self) -> None:
+        if not self.showing_recycle_bin:
+            self.view.show_status_message("Open recycle bin to restore tasks")
+            return
+
+        task_id = self.view.get_selected_task_id()
+        if task_id is None:
+            self.view.show_status_message("Please select a task first")
+            return
+
+        task = self.repository.get_task_by_id(task_id, include_deleted=True)
+        if task is None or task.deleted_at is None:
+            self.view.show_warning("The selected deleted task could not be found.")
+            self._refresh_task_table("Recycle bin refreshed")
+            return
+
+        self.repository.restore_task(task_id)
+        self._refresh_task_table("Task restored successfully")
+
+    def delete_selected_task_permanently(self) -> None:
+        if not self.showing_recycle_bin:
+            self.view.show_status_message(
+                "Open recycle bin to permanently delete tasks"
+            )
+            return
+
+        task_id = self.view.get_selected_task_id()
+        if task_id is None:
+            self.view.show_status_message("Please select a task first")
+            return
+
+        task = self.repository.get_task_by_id(task_id, include_deleted=True)
+        if task is None or task.deleted_at is None:
+            self.view.show_warning("The selected deleted task could not be found.")
+            self._refresh_task_table("Recycle bin refreshed")
+            return
+
+        if not self.view.ask_permanent_delete_confirmation(task.title):
+            return
+
+        self.repository.delete_task_permanently(task_id)
+        if self.editing_task_id == task_id:
+            self.reset_form_state()
+        self._refresh_task_table("Task permanently deleted")
+
+    def empty_recycle_bin(self) -> None:
+        if not self.showing_recycle_bin:
+            self.view.show_status_message("Open recycle bin to clear deleted tasks")
+            return
+
+        deleted_tasks = self.repository.get_deleted_tasks()
+        if not deleted_tasks:
+            self.view.show_status_message("Recycle bin is already empty")
+            return
+
+        if not self.view.ask_empty_recycle_bin_confirmation(len(deleted_tasks)):
+            return
+
+        self.repository.empty_recycle_bin()
+        self._refresh_task_table("Recycle bin emptied")
+
+    def toggle_recycle_bin_view(self) -> None:
+        self.showing_recycle_bin = not self.showing_recycle_bin
+        if self.showing_recycle_bin:
+            self.reset_form_state()
+            self.view.clear_filters()
+            self.view.set_recycle_bin_mode(True)
+            self._refresh_task_table("Recycle bin opened")
+            return
+
+        self.view.set_recycle_bin_mode(False)
+        self._refresh_task_table("Showing active tasks")
 
     def refresh_tasks(self) -> None:
+        if self.showing_recycle_bin:
+            self._refresh_task_table("Recycle bin refreshed")
+            return
+
         status_message = (
             "Filter applied" if self._has_active_filters() else "Showing all tasks"
         )
         self._refresh_task_table(status_message)
 
     def apply_filters(self) -> None:
+        if self.showing_recycle_bin:
+            self._refresh_task_table("Recycle bin refreshed")
+            return
+
         status_message = (
             "Filter applied" if self._has_active_filters() else "Showing all tasks"
         )
@@ -128,6 +231,9 @@ class TaskController:
 
     def clear_filters(self) -> None:
         self.view.clear_filters()
+        if self.showing_recycle_bin:
+            self._refresh_task_table("Recycle bin refreshed")
+            return
         self._refresh_task_table("Showing all tasks")
 
     def clear_form(self) -> None:
@@ -135,6 +241,10 @@ class TaskController:
         self.view.show_status_message("Form cleared")
 
     def export_tasks_to_csv(self) -> None:
+        if self.showing_recycle_bin:
+            self.view.show_status_message("Close recycle bin to export active tasks")
+            return
+
         file_path = self.view.prompt_export_file_path()
         if not file_path:
             self.view.show_status_message("Export cancelled")
@@ -152,7 +262,12 @@ class TaskController:
         self.view.show_status_message("Tasks exported successfully.")
 
     def update_sort_order(self) -> None:
-        self._refresh_task_table("Sort order updated")
+        status_message = (
+            "Recycle bin sort order updated"
+            if self.showing_recycle_bin
+            else "Sort order updated"
+        )
+        self._refresh_task_table(status_message)
 
     def reset_form_state(self) -> None:
         self.editing_task_id = None
@@ -161,14 +276,19 @@ class TaskController:
 
     def _refresh_task_table(self, status_message: str) -> None:
         filters = self.view.get_filter_values()
-        tasks = self.repository.query_tasks(
-            status=filters["status"],
-            priority=filters["priority"],
-            title_query=filters["title_query"],
-            sort_order=filters["sort_order"],
-        )
+        if self.showing_recycle_bin:
+            tasks = self.repository.get_deleted_tasks(filters["sort_order"])
+        else:
+            tasks = self.repository.query_tasks(
+                status=filters["status"],
+                priority=filters["priority"],
+                title_query=filters["title_query"],
+                sort_order=filters["sort_order"],
+            )
         self.view.populate_tasks(tasks)
-        self.view.set_empty_state(self._get_empty_state_message(tasks, filters))
+        self.view.set_empty_state(
+            self._get_empty_state_message(tasks, filters, self.showing_recycle_bin)
+        )
         self.view.update_summary_cards(self._build_summary_counts())
         timeout_ms = 0 if status_message == "Ready" else 5000
         self.view.show_status_message(status_message, timeout_ms)
@@ -197,9 +317,16 @@ class TaskController:
         return summary
 
     @staticmethod
-    def _get_empty_state_message(tasks: list[Task], filters: dict[str, str]) -> str | None:
+    def _get_empty_state_message(
+        tasks: list[Task],
+        filters: dict[str, str],
+        showing_recycle_bin: bool,
+    ) -> str | None:
         if tasks:
             return None
+
+        if showing_recycle_bin:
+            return "Recycle bin is empty."
 
         if filters["status"] or filters["priority"] or filters["title_query"]:
             return "No matching tasks found. Try changing your filters."
