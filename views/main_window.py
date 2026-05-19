@@ -1,6 +1,6 @@
 from collections.abc import Mapping, Sequence
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QFileDialog,
@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QStatusBar,
     QSplitter,
+    QStyle,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -247,6 +248,7 @@ class MainWindow(QMainWindow):
         self.refresh_button.setObjectName("neutralButton")
         self.recycle_bin_button = QPushButton("Open Recycle Bin")
         self.recycle_bin_button.setObjectName("neutralButton")
+        self._set_action_button_icons()
 
         self.restore_button.hide()
         self.delete_forever_button.hide()
@@ -336,6 +338,13 @@ class MainWindow(QMainWindow):
 
         self.recycle_bin_button.setText(
             "Close Recycle Bin" if is_enabled else "Open Recycle Bin"
+        )
+        self.recycle_bin_button.setIcon(
+            self.style().standardIcon(
+                QStyle.SP_DialogCloseButton
+                if is_enabled
+                else QStyle.SP_TrashIcon
+            )
         )
         self.task_table.setHorizontalHeaderItem(
             4, QTableWidgetItem("Deleted Date" if is_enabled else "Created Date")
@@ -435,6 +444,22 @@ class MainWindow(QMainWindow):
         layout.addWidget(title_label)
         layout.addWidget(subtitle_label)
         return header_card
+
+    def _set_action_button_icons(self) -> None:
+        icon_size = QSize(18, 18)
+
+        self.delete_button.setIcon(self.style().standardIcon(QStyle.SP_TrashIcon))
+        self.delete_button.setIconSize(icon_size)
+
+        self.refresh_button.setIcon(
+            self.style().standardIcon(QStyle.SP_BrowserReload)
+        )
+        self.refresh_button.setIconSize(icon_size)
+
+        self.recycle_bin_button.setIcon(
+            self.style().standardIcon(QStyle.SP_TrashIcon)
+        )
+        self.recycle_bin_button.setIconSize(icon_size)
 
     def _build_summary_cards(self) -> QHBoxLayout:
         layout = QHBoxLayout()
