@@ -1,0 +1,23 @@
+[run]
+source = 
+    controllers
+    models
+    repositories
+    services
+    styles
+    views
+
+omit = 
+    tests/*
+    .venv/*
+    main.py
+    pyscript
+    shibokensupport/*
+    signature_bootstrap.py
+
+[report]
+show_missing = True
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    if __name__ == .__main__.:
