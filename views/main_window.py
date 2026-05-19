@@ -13,7 +13,6 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QPushButton,
-    QScrollArea,
     QSizePolicy,
     QStatusBar,
     QSplitter,
@@ -56,32 +55,27 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("Mini Task Tracker")
-        self.resize(1280, 860)
-        self.setMinimumSize(960, 720)
+        self.resize(1280, 780)
+        self.setMinimumSize(1024, 680)
         self.setWindowFlag(Qt.WindowMaximizeButtonHint, True)
         self.is_recycle_bin_mode = False
         self.summary_cards: dict[str, SummaryCard] = {}
         self._build_ui()
 
     def _build_ui(self) -> None:
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setFrameShape(QFrame.NoFrame)
-        scroll_area.setObjectName("mainScrollArea")
-
         central_widget = QWidget()
         central_widget.setObjectName("mainContainer")
         central_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(24, 24, 24, 20)
-        main_layout.setSpacing(20)
+        main_layout = QVBoxLayout(central_widget)
+        main_layout.setContentsMargins(16, 16, 16, 12)
+        main_layout.setSpacing(12)
 
         main_layout.addWidget(self._build_header_card())
         main_layout.addLayout(self._build_summary_cards())
 
         content_splitter = QSplitter(Qt.Horizontal)
         content_splitter.setChildrenCollapsible(False)
-        content_splitter.setHandleWidth(10)
+        content_splitter.setHandleWidth(8)
         content_splitter.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
         form_card, form_layout = self._create_card(
@@ -100,30 +94,30 @@ class MainWindow(QMainWindow):
             "Narrow the list quickly using status, priority, or title search.",
         )
         filter_layout = QGridLayout()
-        filter_layout.setHorizontalSpacing(12)
-        filter_layout.setVerticalSpacing(12)
+        filter_layout.setHorizontalSpacing(10)
+        filter_layout.setVerticalSpacing(8)
 
         self.status_filter = QComboBox()
         self.status_filter.addItem("All Statuses", "")
         self.status_filter.addItems(["Todo", "In Progress", "Done"])
-        self.status_filter.setMinimumHeight(42)
+        self.status_filter.setMinimumHeight(38)
         self.status_filter.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
         self.priority_filter = QComboBox()
         self.priority_filter.addItem("All Priorities", "")
         self.priority_filter.addItems(["Low", "Medium", "High"])
-        self.priority_filter.setMinimumHeight(42)
+        self.priority_filter.setMinimumHeight(38)
         self.priority_filter.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Search by title")
-        self.search_input.setMinimumHeight(42)
+        self.search_input.setMinimumHeight(38)
         self.search_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
         self.sort_order_combo = QComboBox()
         self.sort_order_combo.addItem("Newest First", "desc")
         self.sort_order_combo.addItem("Oldest First", "asc")
-        self.sort_order_combo.setMinimumHeight(42)
+        self.sort_order_combo.setMinimumHeight(38)
         self.sort_order_combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
         self.apply_filter_button = QPushButton("Apply Filter")
@@ -150,7 +144,6 @@ class MainWindow(QMainWindow):
         filter_layout.addWidget(self.sort_order_combo, 5, 0, 1, 2)
         filter_layout.addWidget(self.apply_filter_button, 6, 0)
         filter_layout.addWidget(self.clear_filter_button, 6, 1)
-        filter_layout.setRowStretch(7, 1)
         filter_card_layout.addLayout(filter_layout)
         filter_card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         content_splitter.addWidget(filter_card)
@@ -162,7 +155,7 @@ class MainWindow(QMainWindow):
         table_card, table_layout = self._create_card(
             "tableCard",
             "Task Table",
-            "Browse every task, then select a row to edit or remove it.",
+            "Browse tasks and select one to edit, delete, or restore.",
         )
         table_card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
@@ -185,7 +178,7 @@ class MainWindow(QMainWindow):
         self.task_table.setSelectionMode(QAbstractItemView.SingleSelection)
         self.task_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.task_table.verticalHeader().setVisible(False)
-        self.task_table.verticalHeader().setDefaultSectionSize(46)
+        self.task_table.verticalHeader().setDefaultSectionSize(40)
         self.task_table.setAlternatingRowColors(True)
         self.task_table.setShowGrid(True)
         self.task_table.setFocusPolicy(Qt.StrongFocus)
@@ -216,8 +209,8 @@ class MainWindow(QMainWindow):
         action_card.setObjectName("actionCard")
         action_card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         action_layout = QHBoxLayout(action_card)
-        action_layout.setContentsMargins(18, 16, 18, 16)
-        action_layout.setSpacing(12)
+        action_layout.setContentsMargins(14, 12, 14, 12)
+        action_layout.setSpacing(10)
 
         action_label = QLabel("Quick Actions")
         action_label.setObjectName("sectionLabel")
@@ -264,9 +257,7 @@ class MainWindow(QMainWindow):
         action_layout.addWidget(self.recycle_bin_button)
         main_layout.addWidget(action_card)
 
-        central_widget.setLayout(main_layout)
-        scroll_area.setWidget(central_widget)
-        self.setCentralWidget(scroll_area)
+        self.setCentralWidget(central_widget)
 
         status_bar = QStatusBar(self)
         status_bar.setObjectName("appStatusBar")
@@ -420,8 +411,8 @@ class MainWindow(QMainWindow):
         header_card.setObjectName("headerCard")
 
         layout = QVBoxLayout(header_card)
-        layout.setContentsMargins(24, 22, 24, 22)
-        layout.setSpacing(6)
+        layout.setContentsMargins(18, 14, 18, 14)
+        layout.setSpacing(4)
 
         title_label = QLabel("Mini Task Tracker")
         title_label.setObjectName("headerTitle")
@@ -438,7 +429,7 @@ class MainWindow(QMainWindow):
 
     def _build_summary_cards(self) -> QHBoxLayout:
         layout = QHBoxLayout()
-        layout.setSpacing(16)
+        layout.setSpacing(10)
 
         card_definitions = [
             ("Total Tasks", "total"),
@@ -463,8 +454,8 @@ class MainWindow(QMainWindow):
         card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
         layout = QVBoxLayout(card)
-        layout.setContentsMargins(20, 18, 20, 20)
-        layout.setSpacing(14)
+        layout.setContentsMargins(14, 12, 14, 14)
+        layout.setSpacing(8)
 
         title_label = QLabel(title)
         title_label.setObjectName("cardTitle")

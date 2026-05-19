@@ -24,24 +24,25 @@ class TaskForm(QWidget):
 
         self.title_input = QLineEdit()
         self.title_input.setPlaceholderText("Enter task title")
-        self.title_input.setMinimumHeight(44)
+        self.title_input.setMinimumHeight(38)
         self.title_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
         self.description_input = QTextEdit()
         self.description_input.setPlaceholderText("Enter task description")
-        self.description_input.setMinimumHeight(120)
+        self.description_input.setMinimumHeight(92)
+        self.description_input.setMaximumHeight(130)
         self.description_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         self.priority_input = QComboBox()
         self.priority_input.addItem("Select priority", "")
         self.priority_input.addItems(["Low", "Medium", "High"])
-        self.priority_input.setMinimumHeight(44)
+        self.priority_input.setMinimumHeight(38)
         self.priority_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
         self.status_input = QComboBox()
         self.status_input.addItem("Select status", "")
         self.status_input.addItems(["Todo", "In Progress", "Done"])
-        self.status_input.setMinimumHeight(44)
+        self.status_input.setMinimumHeight(38)
         self.status_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
         self.submit_button = QPushButton("+ Add Task")
@@ -62,15 +63,15 @@ class TaskForm(QWidget):
         status_label.setObjectName("fieldLabel")
 
         field_row = QHBoxLayout()
-        field_row.setSpacing(16)
+        field_row.setSpacing(10)
 
         priority_layout = QVBoxLayout()
-        priority_layout.setSpacing(8)
+        priority_layout.setSpacing(6)
         priority_layout.addWidget(priority_label)
         priority_layout.addWidget(self.priority_input)
 
         status_layout = QVBoxLayout()
-        status_layout.setSpacing(8)
+        status_layout.setSpacing(6)
         status_layout.addWidget(status_label)
         status_layout.addWidget(self.status_input)
 
@@ -78,24 +79,20 @@ class TaskForm(QWidget):
         field_row.addLayout(status_layout, 1)
 
         button_layout = QHBoxLayout()
-        button_layout.setSpacing(12)
+        button_layout.setSpacing(10)
         button_layout.addWidget(self.submit_button)
         button_layout.addWidget(self.clear_button)
         button_layout.addStretch()
 
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.setSpacing(12)
+        main_layout.setSpacing(8)
         main_layout.addWidget(title_label)
         main_layout.addWidget(self.title_input)
-        main_layout.addSpacing(4)
         main_layout.addWidget(description_label)
         main_layout.addWidget(self.description_input, 1)
-        main_layout.addSpacing(4)
         main_layout.addLayout(field_row)
-        main_layout.addSpacing(8)
         main_layout.addLayout(button_layout)
-        main_layout.addStretch()
         self.setLayout(main_layout)
 
     def get_form_data(self) -> dict[str, str]:

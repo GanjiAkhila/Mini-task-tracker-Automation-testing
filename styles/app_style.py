@@ -53,7 +53,7 @@ QFrame#summaryCard[accent="high_priority"] {
 
 QLabel#headerTitle {
     color: #f8fbff;
-    font-size: 28px;
+    font-size: 24px;
     font-weight: 700;
 }
 
@@ -93,7 +93,7 @@ QLabel#summaryCardTitle {
 
 QLabel#summaryCardValue {
     color: #f9fbff;
-    font-size: 26px;
+    font-size: 22px;
     font-weight: 700;
 }
 
@@ -129,7 +129,7 @@ QTextEdit {
 }
 
 QTextEdit {
-    min-height: 140px;
+    min-height: 92px;
 }
 
 QLineEdit:focus,
@@ -145,7 +145,7 @@ QComboBox::drop-down {
 }
 
 QPushButton {
-    min-height: 42px;
+    min-height: 38px;
     padding: 0 18px;
     border-radius: 10px;
     border: 1px solid transparent;
